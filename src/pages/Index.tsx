@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import Navigation from '../components/Navigation';
 import Dashboard from '../components/Dashboard';
 import BookManagement from '../components/BookManagement';
+import MemberManagement from '../components/MemberManagement';
 
 const Index = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -14,12 +15,7 @@ const Index = () => {
       case 'books':
         return <BookManagement />;
       case 'members':
-        return (
-          <div className="p-6">
-            <h1 className="text-3xl font-bold mb-4">Member Management</h1>
-            <p className="text-muted-foreground">Member management functionality coming soon...</p>
-          </div>
-        );
+        return <MemberManagement />;
       case 'reports':
         return (
           <div className="p-6">
