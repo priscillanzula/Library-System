@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
+import { createDemoUsersIfNeeded } from '@/utils/createDemoUsers';
 
 export type UserRole = 'librarian' | 'faculty' | 'student' | 'public';
 
@@ -68,6 +69,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    // Create demo users when the app starts
+    createDemoUsersIfNeeded();
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
