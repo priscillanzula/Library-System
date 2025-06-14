@@ -5,11 +5,23 @@ import Dashboard from '../components/Dashboard';
 import BookManagement from '../components/BookManagement';
 import MemberManagement from '../components/MemberManagement';
 import TransactionSystem from '../components/TransactionSystem';
+import MemberHistory from '../components/MemberHistory';
+import { useAuth } from '../contexts/AuthContext';
 
 const Index = () => {
-  const [currentPage, setCurrentPage] = useState('dashboard');
+  const { userProfile } = useAuth();
+  const isLibrarian = userProfile?.role === 'librarian';
+  
+  // Set initial page based on user role
+  const [currentPage, setCurrentPage] = useState(isLibrarian ? 'dashboard' : 'history');
 
   const renderPage = () => {
+    // If user is not a librarian, only show member history
+    if (!isLibrarian) {
+      return <MemberHistory />;
+    }
+
+    // Librarian pages
     switch (currentPage) {
       case 'dashboard':
         return <Dashboard />;
@@ -33,6 +45,8 @@ const Index = () => {
             <p className="text-muted-foreground">Settings functionality coming soon...</p>
           </div>
         );
+      case 'history':
+        return <MemberHistory />;
       default:
         return <Dashboard />;
     }
