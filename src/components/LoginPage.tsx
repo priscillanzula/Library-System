@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -54,6 +53,7 @@ const LoginPage = () => {
         });
       }
     } else {
+      // Register and then automatically sign in
       const { error: signUpError } = await signUp(email, password, { 
         full_name: fullName,
         role: selectedRole 
@@ -67,14 +67,24 @@ const LoginPage = () => {
           variant: "destructive",
         });
       } else {
-        toast({
-          title: "Registration Successful!",
-          description: "Please check your email to verify your account.",
-        });
-        // Switch to login mode after successful registration
-        setIsLogin(true);
-        setPassword('');
-        setFullName('');
+        // Automatically sign in after successful registration
+        const { error: signInError } = await signIn(email, password);
+        
+        if (signInError) {
+          // If auto sign-in fails, show success message for registration
+          toast({
+            title: "Registration Successful!",
+            description: "Please try logging in with your new credentials.",
+          });
+          setIsLogin(true);
+          setPassword('');
+          setFullName('');
+        } else {
+          toast({
+            title: "Welcome to LibraryMS!",
+            description: "Your account has been created and you are now logged in.",
+          });
+        }
       }
     }
 
