@@ -1,61 +1,94 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Calendar, User, Book, ArrowLeftRight } from 'lucide-react';
+import { Search, Calendar, User, Book, ArrowLeftRight, Plus, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import BorrowForm from './BorrowForm';
 
 interface Transaction {
   id: string;
-  type: 'borrow' | 'return' | 'reserve';
-  bookTitle: string;
-  memberName: string;
-  date: string;
-  dueDate?: string;
+  member_id: string;
+  book_id: string;
+  book_title: string;
+  transaction_type: 'borrow' | 'return';
+  transaction_date: string;
+  due_date?: string;
+  returned_date?: string;
   status: 'active' | 'completed' | 'overdue';
+  price: number;
+  member_name?: string;
 }
 
 const TransactionSystem = () => {
   const { toast } = useToast();
-  const [transactions, setTransactions] = useState<Transaction[]>([
-    {
-      id: '1',
-      type: 'borrow',
-      bookTitle: 'The Great Gatsby',
-      memberName: 'John Smith',
-      date: '2024-06-10',
-      dueDate: '2024-06-24',
-      status: 'active'
-    },
-    {
-      id: '2',
-      type: 'return',
-      bookTitle: 'To Kill a Mockingbird',
-      memberName: 'Jane Doe',
-      date: '2024-06-13',
-      status: 'completed'
-    },
-    {
-      id: '3',
-      type: 'borrow',
-      bookTitle: 'Pride and Prejudice',
-      memberName: 'Bob Johnson',
-      date: '2024-06-01',
-      dueDate: '2024-06-12',
-      status: 'overdue'
-    }
-  ]);
-
+  const { userProfile } = useAuth();
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
+  const [showBorrowForm, setShowBorrowForm] = useState(false);
+
+  // Fetch transactions with member names
+  const fetchTransactions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select(`
+          *,
+          profiles!transactions_member_id_fkey(full_name)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching transactions:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load transactions.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const transactionsWithNames = data?.map(transaction => ({
+        ...transaction,
+        member_name: transaction.profiles?.full_name || 'Unknown Member'
+      })) || [];
+
+      setTransactions(transactionsWithNames);
+    } catch (error) {
+      console.error('Error in fetchTransactions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update overdue transactions
+  const updateOverdueTransactions = async () => {
+    try {
+      const { error } = await supabase.rpc('update_overdue_transactions');
+      if (error) {
+        console.error('Error updating overdue transactions:', error);
+      }
+    } catch (error) {
+      console.error('Error calling update_overdue_transactions:', error);
+    }
+  };
+
+  useEffect(() => {
+    updateOverdueTransactions();
+    fetchTransactions();
+  }, []);
 
   const filteredTransactions = transactions.filter(transaction => {
     const matchesSearch = 
-      transaction.bookTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transaction.memberName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = filterType === 'all' || transaction.type === filterType;
+      transaction.book_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (transaction.member_name && transaction.member_name.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesType = filterType === 'all' || transaction.transaction_type === filterType;
     return matchesSearch && matchesType;
   });
 
@@ -68,27 +101,56 @@ const TransactionSystem = () => {
     }
   };
 
-  const getTypeIcon = (type: Transaction['type']) => {
+  const getTypeIcon = (type: Transaction['transaction_type']) => {
     switch (type) {
       case 'borrow': return <ArrowLeftRight className="w-4 h-4" />;
       case 'return': return <Book className="w-4 h-4" />;
-      case 'reserve': return <Calendar className="w-4 h-4" />;
     }
   };
 
-  const handleQuickReturn = (transactionId: string) => {
-    setTransactions(prev => 
-      prev.map(t => 
-        t.id === transactionId 
-          ? { ...t, status: 'completed' as const, type: 'return' as const, date: new Date().toISOString().split('T')[0] }
-          : t
-      )
-    );
-    toast({
-      title: "Book Returned",
-      description: "The book has been successfully returned.",
-    });
+  const handleQuickReturn = async (transaction: Transaction) => {
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .update({
+          status: 'completed',
+          returned_date: new Date().toISOString(),
+          transaction_type: 'return'
+        })
+        .eq('id', transaction.id);
+
+      if (error) {
+        console.error('Error returning book:', error);
+        toast({
+          title: "Error",
+          description: "Failed to return book.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Book Returned",
+        description: "The book has been successfully returned.",
+      });
+
+      fetchTransactions(); // Refresh the list
+    } catch (error) {
+      console.error('Error in handleQuickReturn:', error);
+    }
   };
+
+  if (showBorrowForm) {
+    return (
+      <BorrowForm
+        onSuccess={() => {
+          setShowBorrowForm(false);
+          fetchTransactions();
+        }}
+        onCancel={() => setShowBorrowForm(false)}
+      />
+    );
+  }
 
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
@@ -97,6 +159,12 @@ const TransactionSystem = () => {
           <h1 className="text-2xl md:text-3xl font-bold">Transactions</h1>
           <p className="text-muted-foreground">Manage book borrowing and returns</p>
         </div>
+        {userProfile?.role === 'librarian' && (
+          <Button onClick={() => setShowBorrowForm(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            New Transaction
+          </Button>
+        )}
       </div>
 
       {/* Search and Filter */}
@@ -120,7 +188,6 @@ const TransactionSystem = () => {
               <option value="all">All Types</option>
               <option value="borrow">Borrow</option>
               <option value="return">Return</option>
-              <option value="reserve">Reserve</option>
             </select>
           </div>
         </CardContent>
@@ -137,52 +204,70 @@ const TransactionSystem = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3 md:space-y-4">
-            {filteredTransactions.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No transactions found matching your criteria.
-              </div>
-            ) : (
-              filteredTransactions.map((transaction) => (
-                <div key={transaction.id} className="border rounded-lg p-3 md:p-4 hover:bg-muted/50 transition-colors">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-3 sm:space-y-0">
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {getTypeIcon(transaction.type)}
-                        <h3 className="font-semibold text-sm md:text-base">{transaction.bookTitle}</h3>
-                        <Badge className={getStatusColor(transaction.status)} variant="secondary">
-                          {transaction.status}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {transaction.type}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <User className="w-4 h-4" />
-                        <span>{transaction.memberName}</span>
-                      </div>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span>Date: {transaction.date}</span>
-                        {transaction.dueDate && (
-                          <span>Due: {transaction.dueDate}</span>
-                        )}
-                      </div>
-                    </div>
-                    {transaction.type === 'borrow' && transaction.status === 'active' && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleQuickReturn(transaction.id)}
-                        className="w-full sm:w-auto"
-                      >
-                        Quick Return
-                      </Button>
-                    )}
-                  </div>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Loading transactions...
+            </div>
+          ) : (
+            <div className="space-y-3 md:space-y-4">
+              {filteredTransactions.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No transactions found matching your criteria.
                 </div>
-              ))
-            )}
-          </div>
+              ) : (
+                filteredTransactions.map((transaction) => (
+                  <div key={transaction.id} className="border rounded-lg p-3 md:p-4 hover:bg-muted/50 transition-colors">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-3 sm:space-y-0">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {getTypeIcon(transaction.transaction_type)}
+                          <h3 className="font-semibold text-sm md:text-base">{transaction.book_title}</h3>
+                          <Badge className={getStatusColor(transaction.status)} variant="secondary">
+                            {transaction.status}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {transaction.transaction_type}
+                          </Badge>
+                          {transaction.status === 'overdue' && (
+                            <Badge className="bg-red-100 text-red-800" variant="secondary">
+                              <AlertTriangle className="w-3 h-3 mr-1" />
+                              Overdue
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <User className="w-4 h-4" />
+                          <span>{transaction.member_name}</span>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span>Date: {new Date(transaction.transaction_date).toLocaleDateString()}</span>
+                          {transaction.due_date && (
+                            <span>Due: {new Date(transaction.due_date).toLocaleDateString()}</span>
+                          )}
+                          {transaction.returned_date && (
+                            <span>Returned: {new Date(transaction.returned_date).toLocaleDateString()}</span>
+                          )}
+                          {transaction.price > 0 && (
+                            <span>Price: ${transaction.price.toFixed(2)}</span>
+                          )}
+                        </div>
+                      </div>
+                      {transaction.transaction_type === 'borrow' && transaction.status === 'active' && userProfile?.role === 'librarian' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleQuickReturn(transaction)}
+                          className="w-full sm:w-auto"
+                        >
+                          Quick Return
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

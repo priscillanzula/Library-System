@@ -9,6 +9,51 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      member_blacklist: {
+        Row: {
+          blacklisted_at: string
+          blacklisted_by: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          member_id: string | null
+          reason: string
+        }
+        Insert: {
+          blacklisted_at?: string
+          blacklisted_by?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          member_id?: string | null
+          reason: string
+        }
+        Update: {
+          blacklisted_at?: string
+          blacklisted_by?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          member_id?: string | null
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_blacklist_blacklisted_by_fkey"
+            columns: ["blacklisted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_blacklist_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -36,6 +81,59 @@ export type Database = {
         }
         Relationships: []
       }
+      transactions: {
+        Row: {
+          book_id: string
+          book_title: string
+          created_at: string
+          due_date: string | null
+          id: string
+          member_id: string | null
+          price: number | null
+          returned_date: string | null
+          status: string
+          transaction_date: string
+          transaction_type: string
+          updated_at: string
+        }
+        Insert: {
+          book_id: string
+          book_title: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          member_id?: string | null
+          price?: number | null
+          returned_date?: string | null
+          status?: string
+          transaction_date?: string
+          transaction_type: string
+          updated_at?: string
+        }
+        Update: {
+          book_id?: string
+          book_title?: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          member_id?: string | null
+          price?: number | null
+          returned_date?: string | null
+          status?: string
+          transaction_date?: string
+          transaction_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -48,6 +146,10 @@ export type Database = {
           user_full_name: string
           user_role: string
         }
+        Returns: undefined
+      }
+      update_overdue_transactions: {
+        Args: Record<PropertyKey, never>
         Returns: undefined
       }
     }

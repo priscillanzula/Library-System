@@ -11,7 +11,8 @@ import {
   Search,
   Bell,
   LogOut,
-  History
+  History,
+  UserX
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -36,6 +37,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
         { id: 'books', label: 'Books', icon: BookOpen, permission: 'view_books' },
         { id: 'members', label: 'Members', icon: Users, permission: 'view_members' },
         { id: 'transactions', label: 'Transactions', icon: BarChart3, permission: null },
+        { id: 'blacklist', label: 'Blacklist', icon: UserX, permission: null },
         { id: 'reports', label: 'Reports', icon: BarChart3, permission: 'view_reports' },
         { id: 'settings', label: 'Settings', icon: Settings, permission: 'manage_settings' },
       ];

@@ -6,6 +6,7 @@ import BookManagement from '../components/BookManagement';
 import MemberManagement from '../components/MemberManagement';
 import TransactionSystem from '../components/TransactionSystem';
 import MemberHistory from '../components/MemberHistory';
+import BlacklistManagement from '../components/BlacklistManagement';
 import { useAuth } from '../contexts/AuthContext';
 
 const Index = () => {
@@ -31,6 +32,8 @@ const Index = () => {
         return <MemberManagement />;
       case 'transactions':
         return <TransactionSystem />;
+      case 'blacklist':
+        return <BlacklistManagement />;
       case 'reports':
         return (
           <div className="p-3 md:p-6">
