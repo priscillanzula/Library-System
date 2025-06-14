@@ -98,7 +98,7 @@ const LoginPage = () => {
   };
 
   const fillDemoCredentials = (role: UserRole) => {
-    setEmail(`${role}@example.com`);
+    setEmail(`demo.${role}@gmail.com`);
     setPassword('password123');
     setIsLogin(true);
   };

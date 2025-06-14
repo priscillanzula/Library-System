@@ -3,17 +3,17 @@ import { supabase } from '@/integrations/supabase/client';
 
 const demoUsers = [
   {
-    email: 'librarian@example.com',
+    email: 'demo.librarian@gmail.com',
     password: 'password123',
     userData: { full_name: 'Demo Librarian', role: 'librarian' }
   },
   {
-    email: 'faculty@example.com', 
+    email: 'demo.faculty@gmail.com', 
     password: 'password123',
     userData: { full_name: 'Demo Faculty', role: 'faculty' }
   },
   {
-    email: 'student@example.com',
+    email: 'demo.student@gmail.com',
     password: 'password123', 
     userData: { full_name: 'Demo Student', role: 'student' }
   }

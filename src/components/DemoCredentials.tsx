@@ -11,6 +11,18 @@ interface DemoCredentialsProps {
 const DemoCredentials: React.FC<DemoCredentialsProps> = ({ isLogin, onFillCredentials }) => {
   if (!isLogin) return null;
 
+  const fillLibrarianCredentials = () => {
+    onFillCredentials('librarian');
+  };
+
+  const fillFacultyCredentials = () => {
+    onFillCredentials('faculty');
+  };
+
+  const fillStudentCredentials = () => {
+    onFillCredentials('student');
+  };
+
   return (
     <div className="mt-4 text-center space-y-2">
       <p className="text-sm text-muted-foreground font-semibold">Quick Demo Login:</p>
@@ -19,7 +31,7 @@ const DemoCredentials: React.FC<DemoCredentialsProps> = ({ isLogin, onFillCreden
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => onFillCredentials('librarian')}
+          onClick={fillLibrarianCredentials}
         >
           Librarian
         </Button>
@@ -27,7 +39,7 @@ const DemoCredentials: React.FC<DemoCredentialsProps> = ({ isLogin, onFillCreden
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => onFillCredentials('faculty')}
+          onClick={fillFacultyCredentials}
         >
           Faculty
         </Button>
@@ -35,12 +47,17 @@ const DemoCredentials: React.FC<DemoCredentialsProps> = ({ isLogin, onFillCreden
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => onFillCredentials('student')}
+          onClick={fillStudentCredentials}
         >
           Student
         </Button>
       </div>
-      <p className="text-xs text-muted-foreground">Password: password123</p>
+      <div className="text-xs text-muted-foreground space-y-1">
+        <p>Librarian: demo.librarian@gmail.com</p>
+        <p>Faculty: demo.faculty@gmail.com</p>
+        <p>Student: demo.student@gmail.com</p>
+        <p>Password: password123</p>
+      </div>
     </div>
   );
 };
