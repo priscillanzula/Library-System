@@ -10,12 +10,14 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 const LoginPage = () => {
+  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const { signIn } = useAuth();
+  const { signIn, signUp } = useAuth();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,26 +27,60 @@ const LoginPage = () => {
       return;
     }
 
+    if (!isLogin && !fullName) {
+      setError('Please enter your full name');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 
-    const { error: signInError } = await signIn(email, password);
+    if (isLogin) {
+      const { error: signInError } = await signIn(email, password);
 
-    if (signInError) {
-      setError(signInError.message);
-      toast({
-        title: "Login Failed",
-        description: signInError.message,
-        variant: "destructive",
-      });
+      if (signInError) {
+        setError(signInError.message);
+        toast({
+          title: "Login Failed",
+          description: signInError.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Welcome back!",
+          description: "You have been successfully logged in.",
+        });
+      }
     } else {
-      toast({
-        title: "Welcome back!",
-        description: "You have been successfully logged in.",
-      });
+      const { error: signUpError } = await signUp(email, password, { full_name: fullName });
+
+      if (signUpError) {
+        setError(signUpError.message);
+        toast({
+          title: "Registration Failed",
+          description: signUpError.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Registration Successful!",
+          description: "Please check your email to verify your account.",
+        });
+        // Switch to login mode after successful registration
+        setIsLogin(true);
+        setPassword('');
+        setFullName('');
+      }
     }
 
     setIsLoading(false);
+  };
+
+  const toggleMode = () => {
+    setIsLogin(!isLogin);
+    setError('');
+    setPassword('');
+    setFullName('');
   };
 
   return (
@@ -55,9 +91,14 @@ const LoginPage = () => {
             <BookOpen className="h-8 w-8 text-primary" />
             <h1 className="text-2xl font-bold">LibraryMS</h1>
           </div>
-          <CardTitle className="text-2xl">Welcome back</CardTitle>
+          <CardTitle className="text-2xl">
+            {isLogin ? 'Welcome back' : 'Create account'}
+          </CardTitle>
           <CardDescription>
-            Sign in to your librarian account to manage the library
+            {isLogin 
+              ? 'Sign in to your librarian account to manage the library'
+              : 'Create a new librarian account to get started'
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -66,6 +107,20 @@ const LoginPage = () => {
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
+            )}
+            
+            {!isLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  type="text"
+                  placeholder="Enter your full name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                />
+              </div>
             )}
             
             <div className="space-y-2">
@@ -112,15 +167,33 @@ const LoginPage = () => {
               className="w-full"
               disabled={isLoading}
             >
-              {isLoading ? 'Signing in...' : 'Sign in'}
+              {isLoading 
+                ? (isLogin ? 'Signing in...' : 'Creating account...') 
+                : (isLogin ? 'Sign in' : 'Create account')
+              }
             </Button>
           </form>
           
           <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              Demo credentials: librarian@example.com / password123
-            </p>
+            <Button
+              variant="link"
+              onClick={toggleMode}
+              className="text-sm"
+            >
+              {isLogin 
+                ? "Don't have an account? Sign up" 
+                : "Already have an account? Sign in"
+              }
+            </Button>
           </div>
+          
+          {isLogin && (
+            <div className="mt-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                Demo credentials: librarian@example.com / password123
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
