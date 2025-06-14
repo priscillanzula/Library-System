@@ -1,11 +1,12 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Plus, Edit, Trash2, Eye } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Eye, Lock } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import BookForm from './BookForm';
 import BookDetails from './BookDetails';
 
@@ -24,6 +25,9 @@ export interface Book {
 }
 
 const BookManagement = () => {
+  const { hasPermission, userProfile } = useAuth();
+  const { toast } = useToast();
+  
   const [books, setBooks] = useState<Book[]>([
     {
       id: '1',
@@ -83,25 +87,64 @@ const BookManagement = () => {
   });
 
   const handleAddBook = (bookData: Omit<Book, 'id'>) => {
+    if (!hasPermission('add_book')) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to add books.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const newBook: Book = {
       ...bookData,
       id: Date.now().toString(),
     };
     setBooks([...books, newBook]);
     setShowBookForm(false);
+    toast({
+      title: "Book Added",
+      description: "The book has been successfully added to the library.",
+    });
   };
 
   const handleEditBook = (bookData: Omit<Book, 'id'>) => {
+    if (!hasPermission('edit_book')) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to edit books.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (editingBook) {
       setBooks(books.map(book => 
         book.id === editingBook.id ? { ...bookData, id: editingBook.id } : book
       ));
       setEditingBook(null);
+      toast({
+        title: "Book Updated",
+        description: "The book has been successfully updated.",
+      });
     }
   };
 
   const handleDeleteBook = (bookId: string) => {
+    if (!hasPermission('delete_book')) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to delete books.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setBooks(books.filter(book => book.id !== bookId));
+    toast({
+      title: "Book Deleted",
+      description: "The book has been successfully removed from the library.",
+    });
   };
 
   const getStatusColor = (status: Book['status']) => {
@@ -133,10 +176,26 @@ const BookManagement = () => {
         book={selectedBook}
         onBack={() => setSelectedBook(null)}
         onEdit={() => {
+          if (!hasPermission('edit_book')) {
+            toast({
+              title: "Access Denied",
+              description: "You don't have permission to edit books.",
+              variant: "destructive",
+            });
+            return;
+          }
           setEditingBook(selectedBook);
           setSelectedBook(null);
         }}
         onDelete={() => {
+          if (!hasPermission('delete_book')) {
+            toast({
+              title: "Access Denied",
+              description: "You don't have permission to delete books.",
+              variant: "destructive",
+            });
+            return;
+          }
           handleDeleteBook(selectedBook.id);
           setSelectedBook(null);
         }}
@@ -149,12 +208,26 @@ const BookManagement = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Book Management</h1>
-          <p className="text-muted-foreground">Manage your library's book collection</p>
+          <p className="text-muted-foreground">
+            Manage your library's book collection
+            {userProfile && (
+              <Badge className="ml-2 text-xs">
+                Access Level: {userProfile.role}
+              </Badge>
+            )}
+          </p>
         </div>
-        <Button onClick={() => setShowBookForm(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add New Book
-        </Button>
+        {hasPermission('add_book') ? (
+          <Button onClick={() => setShowBookForm(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add New Book
+          </Button>
+        ) : (
+          <Button disabled className="opacity-50">
+            <Lock className="w-4 h-4 mr-2" />
+            Add New Book
+          </Button>
+        )}
       </div>
 
       {/* Search and Filter */}
@@ -227,20 +300,32 @@ const BookManagement = () => {
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setEditingBook(book)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDeleteBook(book.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      {hasPermission('edit_book') ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEditingBook(book)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      ) : (
+                        <Button variant="outline" size="sm" disabled className="opacity-50">
+                          <Lock className="w-4 h-4" />
+                        </Button>
+                      )}
+                      {hasPermission('delete_book') ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteBook(book.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      ) : (
+                        <Button variant="outline" size="sm" disabled className="opacity-50">
+                          <Lock className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>

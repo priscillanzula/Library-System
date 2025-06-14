@@ -4,9 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { BookOpen, Eye, EyeOff } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth, UserRole } from '../contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 const LoginPage = () => {
@@ -14,6 +15,7 @@ const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [selectedRole, setSelectedRole] = useState<UserRole>('student');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -52,7 +54,12 @@ const LoginPage = () => {
         });
       }
     } else {
-      const { error: signUpError } = await signUp(email, password, { full_name: fullName });
+      // For demo purposes, we'll append the role to the email to simulate role assignment
+      const roleEmail = `${selectedRole}.${email}`;
+      const { error: signUpError } = await signUp(roleEmail, password, { 
+        full_name: fullName,
+        role: selectedRole 
+      });
 
       if (signUpError) {
         setError(signUpError.message);
@@ -70,6 +77,7 @@ const LoginPage = () => {
         setIsLogin(true);
         setPassword('');
         setFullName('');
+        setEmail('');
       }
     }
 
@@ -81,6 +89,7 @@ const LoginPage = () => {
     setError('');
     setPassword('');
     setFullName('');
+    setEmail('');
   };
 
   return (
@@ -96,8 +105,8 @@ const LoginPage = () => {
           </CardTitle>
           <CardDescription>
             {isLogin 
-              ? 'Sign in to your librarian account to manage the library'
-              : 'Create a new librarian account to get started'
+              ? 'Sign in to your account to access the library system'
+              : 'Create a new account to get started'
             }
           </CardDescription>
         </CardHeader>
@@ -110,17 +119,34 @@ const LoginPage = () => {
             )}
             
             {!isLogin && (
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input
-                  id="fullName"
-                  type="text"
-                  placeholder="Enter your full name"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                />
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Full Name</Label>
+                  <Input
+                    id="fullName"
+                    type="text"
+                    placeholder="Enter your full name"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="role">Account Type</Label>
+                  <Select value={selectedRole} onValueChange={(value: UserRole) => setSelectedRole(value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="student">Student</SelectItem>
+                      <SelectItem value="faculty">Faculty</SelectItem>
+                      <SelectItem value="librarian">Librarian</SelectItem>
+                      <SelectItem value="public">Public Member</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
             )}
             
             <div className="space-y-2">
@@ -128,7 +154,7 @@ const LoginPage = () => {
               <Input
                 id="email"
                 type="email"
-                placeholder="librarian@example.com"
+                placeholder="your.email@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -188,10 +214,13 @@ const LoginPage = () => {
           </div>
           
           {isLogin && (
-            <div className="mt-4 text-center">
-              <p className="text-sm text-muted-foreground">
-                Demo credentials: librarian@example.com / password123
-              </p>
+            <div className="mt-4 text-center space-y-2">
+              <p className="text-sm text-muted-foreground font-semibold">Demo accounts:</p>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>Librarian: librarian@example.com / password123</p>
+                <p>Faculty: faculty@example.com / password123</p>
+                <p>Student: student@example.com / password123</p>
+              </div>
             </div>
           )}
         </CardContent>

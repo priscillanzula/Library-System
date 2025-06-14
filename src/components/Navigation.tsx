@@ -21,15 +21,15 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) => {
-  const { user, signOut } = useAuth();
+  const { user, userProfile, signOut, hasPermission } = useAuth();
   const { toast } = useToast();
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'books', label: 'Books', icon: BookOpen },
-    { id: 'members', label: 'Members', icon: Users },
-    { id: 'reports', label: 'Reports', icon: BarChart3 },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'dashboard', label: 'Dashboard', icon: Home, permission: null },
+    { id: 'books', label: 'Books', icon: BookOpen, permission: 'view_books' },
+    { id: 'members', label: 'Members', icon: Users, permission: 'view_members' },
+    { id: 'reports', label: 'Reports', icon: BarChart3, permission: 'view_reports' },
+    { id: 'settings', label: 'Settings', icon: Settings, permission: 'manage_settings' },
   ];
 
   const handleSignOut = async () => {
@@ -38,6 +38,16 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
       title: "Signed out",
       description: "You have been successfully signed out.",
     });
+  };
+
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'librarian': return 'bg-purple-100 text-purple-800';
+      case 'faculty': return 'bg-blue-100 text-blue-800';
+      case 'student': return 'bg-green-100 text-green-800';
+      case 'public': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
 
   return (
@@ -56,6 +66,9 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentPage === item.id;
+            const hasAccess = !item.permission || hasPermission(item.permission);
+            
+            if (!hasAccess) return null;
             
             return (
               <Button
@@ -84,11 +97,18 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
           </Button>
           <div className="flex items-center space-x-2">
             <div className="text-right">
-              <p className="text-sm font-medium">{user?.user_metadata?.full_name || 'Librarian'}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium">{userProfile?.full_name || 'User'}</p>
+                {userProfile && (
+                  <Badge className={getRoleColor(userProfile.role)}>
+                    {userProfile.role}
+                  </Badge>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
             <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
-              {(user?.user_metadata?.full_name || user?.email || 'L').charAt(0).toUpperCase()}
+              {(userProfile?.full_name || user?.email || 'U').charAt(0).toUpperCase()}
             </div>
             <Button
               variant="ghost"
