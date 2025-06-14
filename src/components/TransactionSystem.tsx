@@ -12,15 +12,15 @@ import BorrowForm from './BorrowForm';
 
 interface Transaction {
   id: string;
-  member_id: string;
+  member_id: string | null;
   book_id: string;
   book_title: string;
   transaction_type: 'borrow' | 'return';
   transaction_date: string;
-  due_date?: string;
-  returned_date?: string;
+  due_date: string | null;
+  returned_date: string | null;
   status: 'active' | 'completed' | 'overdue';
-  price: number;
+  price: number | null;
   member_name?: string;
 }
 
@@ -56,6 +56,9 @@ const TransactionSystem = () => {
 
       const transactionsWithNames = data?.map(transaction => ({
         ...transaction,
+        transaction_type: transaction.transaction_type as 'borrow' | 'return',
+        status: transaction.status as 'active' | 'completed' | 'overdue',
+        price: transaction.price || 0,
         member_name: transaction.profiles?.full_name || 'Unknown Member'
       })) || [];
 
@@ -247,7 +250,7 @@ const TransactionSystem = () => {
                           {transaction.returned_date && (
                             <span>Returned: {new Date(transaction.returned_date).toLocaleDateString()}</span>
                           )}
-                          {transaction.price > 0 && (
+                          {transaction.price && transaction.price > 0 && (
                             <span>Price: ${transaction.price.toFixed(2)}</span>
                           )}
                         </div>
