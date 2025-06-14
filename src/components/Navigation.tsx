@@ -9,8 +9,11 @@ import {
   Settings, 
   Home,
   Search,
-  Bell
+  Bell,
+  LogOut
 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface NavigationProps {
   currentPage: string;
@@ -18,6 +21,9 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) => {
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
+
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'books', label: 'Books', icon: BookOpen },
@@ -25,6 +31,14 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
     { id: 'reports', label: 'Reports', icon: BarChart3 },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast({
+      title: "Signed out",
+      description: "You have been successfully signed out.",
+    });
+  };
 
   return (
     <div className="bg-white border-b border-gray-200 px-6 py-4">
@@ -70,12 +84,20 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
           </Button>
           <div className="flex items-center space-x-2">
             <div className="text-right">
-              <p className="text-sm font-medium">Librarian</p>
-              <p className="text-xs text-muted-foreground">librarian@example.com</p>
+              <p className="text-sm font-medium">{user?.user_metadata?.full_name || 'Librarian'}</p>
+              <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
             <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
-              L
+              {(user?.user_metadata?.full_name || user?.email || 'L').charAt(0).toUpperCase()}
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSignOut}
+              className="ml-2"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>
