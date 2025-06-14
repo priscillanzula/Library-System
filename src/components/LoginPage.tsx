@@ -1,13 +1,12 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { BookOpen, Eye, EyeOff } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 import { useAuth, UserRole } from '../contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import LoginForm from './LoginForm';
+import DemoCredentials from './DemoCredentials';
+import AuthToggle from './AuthToggle';
 
 const LoginPage = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -123,140 +122,29 @@ const LoginPage = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            
-            {!isLogin && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name</Label>
-                  <Input
-                    id="fullName"
-                    type="text"
-                    placeholder="Enter your full name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="role">Account Type</Label>
-                  <Select value={selectedRole} onValueChange={(value: UserRole) => setSelectedRole(value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select your role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="student">Student</SelectItem>
-                      <SelectItem value="faculty">Faculty</SelectItem>
-                      <SelectItem value="librarian">Librarian</SelectItem>
-                      <SelectItem value="public">Public Member</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </>
-            )}
-            
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="your.email@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
-            
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-            >
-              {isLoading 
-                ? (isLogin ? 'Signing in...' : 'Creating account...') 
-                : (isLogin ? 'Sign in' : 'Create account')
-              }
-            </Button>
-          </form>
+          <LoginForm
+            isLogin={isLogin}
+            email={email}
+            setEmail={setEmail}
+            password={password}
+            setPassword={setPassword}
+            fullName={fullName}
+            setFullName={setFullName}
+            selectedRole={selectedRole}
+            setSelectedRole={setSelectedRole}
+            showPassword={showPassword}
+            setShowPassword={setShowPassword}
+            isLoading={isLoading}
+            error={error}
+            onSubmit={handleSubmit}
+          />
           
-          <div className="mt-6 text-center">
-            <Button
-              variant="link"
-              onClick={toggleMode}
-              className="text-sm"
-            >
-              {isLogin 
-                ? "Don't have an account? Sign up" 
-                : "Already have an account? Sign in"
-              }
-            </Button>
-          </div>
+          <AuthToggle isLogin={isLogin} onToggle={toggleMode} />
           
-          {isLogin && (
-            <div className="mt-4 text-center space-y-2">
-              <p className="text-sm text-muted-foreground font-semibold">Quick Demo Login:</p>
-              <div className="flex flex-wrap gap-2 justify-center">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fillDemoCredentials('librarian')}
-                >
-                  Librarian
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fillDemoCredentials('faculty')}
-                >
-                  Faculty
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fillDemoCredentials('student')}
-                >
-                  Student
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">Password: password123</p>
-            </div>
-          )}
+          <DemoCredentials 
+            isLogin={isLogin} 
+            onFillCredentials={fillDemoCredentials} 
+          />
         </CardContent>
       </Card>
     </div>
