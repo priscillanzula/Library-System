@@ -54,9 +54,7 @@ const LoginPage = () => {
         });
       }
     } else {
-      // For demo purposes, we'll append the role to the email to simulate role assignment
-      const roleEmail = `${selectedRole}.${email}`;
-      const { error: signUpError } = await signUp(roleEmail, password, { 
+      const { error: signUpError } = await signUp(email, password, { 
         full_name: fullName,
         role: selectedRole 
       });
@@ -77,7 +75,6 @@ const LoginPage = () => {
         setIsLogin(true);
         setPassword('');
         setFullName('');
-        setEmail('');
       }
     }
 
@@ -89,7 +86,12 @@ const LoginPage = () => {
     setError('');
     setPassword('');
     setFullName('');
-    setEmail('');
+  };
+
+  const fillDemoCredentials = (role: UserRole) => {
+    setEmail(`${role}@example.com`);
+    setPassword('password123');
+    setIsLogin(true);
   };
 
   return (
@@ -215,12 +217,34 @@ const LoginPage = () => {
           
           {isLogin && (
             <div className="mt-4 text-center space-y-2">
-              <p className="text-sm text-muted-foreground font-semibold">Demo accounts:</p>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <p>Librarian: librarian@example.com / password123</p>
-                <p>Faculty: faculty@example.com / password123</p>
-                <p>Student: student@example.com / password123</p>
+              <p className="text-sm text-muted-foreground font-semibold">Quick Demo Login:</p>
+              <div className="flex flex-wrap gap-2 justify-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fillDemoCredentials('librarian')}
+                >
+                  Librarian
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fillDemoCredentials('faculty')}
+                >
+                  Faculty
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fillDemoCredentials('student')}
+                >
+                  Student
+                </Button>
               </div>
+              <p className="text-xs text-muted-foreground">Password: password123</p>
             </div>
           )}
         </CardContent>

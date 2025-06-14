@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 
 export type UserRole = 'librarian' | 'faculty' | 'student' | 'public';
@@ -10,6 +10,8 @@ export interface UserProfile {
   email: string;
   full_name: string;
   role: UserRole;
+  created_at: string;
+  updated_at: string;
 }
 
 interface AuthContextType {
@@ -34,8 +36,8 @@ export const useAuth = () => {
 
 // Define permissions for each role
 const rolePermissions: Record<UserRole, string[]> = {
-  librarian: ['add_book', 'edit_book', 'delete_book', 'add_member', 'edit_member', 'delete_member', 'view_reports', 'manage_settings'],
-  faculty: ['add_book', 'edit_book', 'view_reports'],
+  librarian: ['add_book', 'edit_book', 'delete_book', 'add_member', 'edit_member', 'delete_member', 'view_reports', 'manage_settings', 'view_books', 'view_members'],
+  faculty: ['add_book', 'edit_book', 'view_reports', 'view_books', 'view_members'],
   student: ['view_books', 'view_members'],
   public: ['view_books']
 };
@@ -45,36 +47,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        // For demo purposes, we'll determine role based on email
-        // In a real app, this would come from a database
-        const role = determineUserRole(session.user.email || '');
-        setUserProfile({
-          id: session.user.id,
-          email: session.user.email || '',
-          full_name: session.user.user_metadata?.full_name || 'User',
-          role
-        });
-      }
-      setLoading(false);
-    });
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-    // Listen for auth changes
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        return null;
+      }
+
+      return data as UserProfile;
+    } catch (error) {
+      console.error('Error in fetchUserProfile:', error);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id);
         setUser(session?.user ?? null);
+        
         if (session?.user) {
-          const role = determineUserRole(session.user.email || '');
-          setUserProfile({
-            id: session.user.id,
-            email: session.user.email || '',
-            full_name: session.user.user_metadata?.full_name || 'User',
-            role
-          });
+          // Fetch user profile from our profiles table
+          const profile = await fetchUserProfile(session.user.id);
+          setUserProfile(profile);
         } else {
           setUserProfile(null);
         }
@@ -82,22 +85,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
+    // Get initial session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      console.log('Initial session:', session?.user?.id);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        const profile = await fetchUserProfile(session.user.id);
+        setUserProfile(profile);
+      }
+      setLoading(false);
+    });
+
     return () => subscription.unsubscribe();
   }, []);
-
-  // Demo function to determine role based on email
-  // In a real app, this would be stored in the database
-  const determineUserRole = (email: string): UserRole => {
-    if (email.includes('librarian') || email.includes('admin')) {
-      return 'librarian';
-    } else if (email.includes('faculty') || email.includes('professor')) {
-      return 'faculty';
-    } else if (email.includes('student')) {
-      return 'student';
-    } else {
-      return 'public';
-    }
-  };
 
   const hasPermission = (permission: string): boolean => {
     if (!userProfile) return false;
@@ -113,10 +114,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signUp = async (email: string, password: string, userData?: any) => {
+    const redirectUrl = `${window.location.origin}/`;
+    
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
+        emailRedirectTo: redirectUrl,
         data: userData,
       },
     });
