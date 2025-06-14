@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -54,11 +53,17 @@ const TransactionSystem = () => {
         return;
       }
 
-      const transactionsWithNames = data?.map(transaction => ({
-        ...transaction,
+      const transactionsWithNames: Transaction[] = data?.map(transaction => ({
+        id: transaction.id,
+        member_id: transaction.member_id,
+        book_id: transaction.book_id,
+        book_title: transaction.book_title,
         transaction_type: transaction.transaction_type as 'borrow' | 'return',
+        transaction_date: transaction.transaction_date,
+        due_date: transaction.due_date,
+        returned_date: transaction.returned_date,
         status: transaction.status as 'active' | 'completed' | 'overdue',
-        price: transaction.price || 0,
+        price: transaction.price,
         member_name: transaction.profiles?.full_name || 'Unknown Member'
       })) || [];
 
